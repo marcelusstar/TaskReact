@@ -1,41 +1,38 @@
 import React, { Component } from 'react'
-import DataGrid, { Column, Editing, Paging, Sorting} from 'devextreme-react/data-grid';
+import DataGrid, { Column, Editing, Paging} from 'devextreme-react/data-grid';
 
 class Dictionary extends Component {
 
-    checkConsistence(valueDictionary) {
+    checkConsistency(valueDictionary) {
         let duplicated = false;
         let forked = false;
         let cycled = false;
         let chained = false;
-        let idElementInconsistent;
+        let idInconsistentElement;
 
-        let elementDictionary = valueDictionary.data
+        let currentDictionaryItem = valueDictionary.data
 
-        this.props.users.some(function (item) {
-            if (item !== elementDictionary) {
-                if (item.name === elementDictionary.name && item.email === elementDictionary.email) {
-                    duplicated = true;
-                    idElementInconsistent = item.id;
-                    
-                    return true;
-                }
-                else if (item.name === elementDictionary.name){
-                    forked = true;
-                    idElementInconsistent = item.id;
-                    
-                    return true;
-                }
-                else if (item.name === elementDictionary.email && item.email === elementDictionary.name) {
+        this.props.dictionary.some(function (item) {
+            if (item !== currentDictionaryItem) {
+
+                if (item.domain === currentDictionaryItem.range && item.range === currentDictionaryItem.domain) {
                     cycled = true;
-                    idElementInconsistent = item.id;
-                    
+                    idInconsistentElement = item.id;                    
                     return true;
                 }
-                else if (item.email === elementDictionary.name) {
+                if (item.range === currentDictionaryItem.domain || currentDictionaryItem.range === item.domain) {
                     chained = true;
-                    idElementInconsistent = item.id;
-                    
+                    idInconsistentElement = item.id;                    
+                    return true;
+                }
+                if (item.domain === currentDictionaryItem.domain && item.range === currentDictionaryItem.range) {
+                    duplicated = true;
+                    idInconsistentElement = item.id;                    
+                    return true;
+                }
+                if (item.domain === currentDictionaryItem.domain){
+                    forked = true;
+                    idInconsistentElement = item.id;                    
                     return true;
                 }
             }
@@ -43,34 +40,34 @@ class Dictionary extends Component {
 
         if (cycled === true){
             return (
-            <div>
-                <i id="cycled" className="dx-icon dx-icon-warning"></i>
-                <strong>Cycled with ID: {idElementInconsistent}</strong>
-            </div>              
+                <div>
+                    <i id="cycled" className="dx-icon dx-icon-warning"></i>
+                    <strong>Cycled with ID: {idInconsistentElement}</strong>
+                </div>              
             );
         }
         if (chained === true){
             return (
-            <div>
-                <i id="chained" className="dx-icon dx-icon-warning"></i>
-                <strong>Chained with ID: {idElementInconsistent}</strong>
-            </div>               
+                <div>
+                    <i id="chained" className="dx-icon dx-icon-warning"></i>
+                    <strong>Chained with ID: {idInconsistentElement}</strong>
+                </div>               
             );
         }
         if (duplicated === true){
             return (
                 <div>
-                <i id="duplicated" className="dx-icon dx-icon-warning"></i>
-                <strong>Duplicated with ID: {idElementInconsistent}</strong>
+                    <i id="duplicated" className="dx-icon dx-icon-warning"></i>
+                    <strong>Duplicated with ID: {idInconsistentElement}</strong>
                 </div>
             );
-            }
+        }
         if (forked === true){
             return (
-            <div>
-                <i id="forked" className="dx-icon dx-icon-warning"></i>
-                <strong>Forked with ID: {idElementInconsistent}</strong>
-            </div>            
+                <div>
+                    <i id="forked" className="dx-icon dx-icon-warning"></i>
+                    <strong>Forked with ID: {idInconsistentElement}</strong>
+                </div>            
             );
         }        
         else{
@@ -81,7 +78,7 @@ class Dictionary extends Component {
     onInitNewRowHandler(event){
         let lastEntry, newId;
 
-        lastEntry = this.props.users.slice(-1)[0];
+        lastEntry = this.props.dictionary.slice(-1)[0];
 
         if (lastEntry)
             newId = lastEntry.id + 1;
@@ -91,32 +88,39 @@ class Dictionary extends Component {
         event.data.id = newId
     }
 
+    onRowInsertingHandler(event){
+        if (!event.data.domain || !event.data.range)
+            event.cancel = true;
+    }
+
     constructor(props) {
         super(props);
         this.onInitNewRowHandler = this.onInitNewRowHandler.bind(this);
+        this.onRowInsertingHandler = this.onRowInsertingHandler.bind(this);
 
         this.state = {
-            users: this.props.users
+            dictionary: this.props.dictionary
           }
       }
 
     render () {
         return (
             <DataGrid
-                dataSource={this.props.users}
+                dataSource={this.props.dictionary}
                 allowColumnReordering={true}
                 showBorders={true}
-                onInitNewRow={this.onInitNewRowHandler}>
-                <Paging enabled={true} pageSize={5} />
+                onInitNewRow={this.onInitNewRowHandler}
+                onRowInserting={this.onRowInsertingHandler}>
+                <Paging enabled={true} pageSize={7} />
                 <Editing
                     mode={'row'}
                     allowUpdating={true}
                     allowDeleting={true}
                     allowAdding={true} />
                 <Column dataField={'id'} allowEditing={false} sortOrder={'desc'}/>
-                <Column dataField={'name'} />
-                <Column dataField={'email'} />
-                <Column caption={'Status'} cellRender={this.checkConsistence.bind(this)}/>
+                <Column dataField={'domain'} />
+                <Column dataField={'range'} />
+                <Column caption={'Status'} cellRender={this.checkConsistency.bind(this)}/>
             </DataGrid>
         );
       }
